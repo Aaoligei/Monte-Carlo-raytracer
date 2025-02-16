@@ -4,13 +4,14 @@
 #include <iostream>
 #include"Ray.h"
 #include"obj_loader.h"
+#include"Model.h"
 // 命中记录结构
 struct HitRecord {
     float t;
     glm::vec3 point;
     glm::vec3 normal;
     bool front_face;
-    glm::vec3 color;
+    glm::vec3 color; 
 
     void set_face_normal(const Ray& ray, const glm::vec3& outward_normal) {
         front_face = glm::dot(ray.direction, outward_normal) < 0;
@@ -135,13 +136,18 @@ class Mesh : public Hittable {
 public:
     std::vector<Triangle> triangles;
 
-    Mesh(const ObjMesh& obj) {
-        for (size_t i = 0; i < obj.indices.size(); i += 3) {
-            glm::vec3 v0 = obj.vertices[obj.indices[i]];
-            glm::vec3 v1 = obj.vertices[obj.indices[i + 1]];
-            glm::vec3 v2 = obj.vertices[obj.indices[i + 2]];
-            triangles.emplace_back(v0, v1, v2);
+
+    Mesh(const Model& obj) {
+        
+        // 生成三角形
+        for (size_t i = 0; i < obj.faces.size(); i ++) {
+            glm::vec3 v0 = glm::vec3(obj.vertexes[obj.faces[i].vertexIdx[0]].point.x, obj.vertexes[obj.faces[i].vertexIdx[0]].point.y, obj.vertexes[obj.faces[i].vertexIdx[0]].point.z);
+            glm::vec3 v1 = glm::vec3(obj.vertexes[obj.faces[i].vertexIdx[1]].point.x, obj.vertexes[obj.faces[i].vertexIdx[1]].point.y, obj.vertexes[obj.faces[i].vertexIdx[1]].point.z);
+            glm::vec3 v2 = glm::vec3(obj.vertexes[obj.faces[i].vertexIdx[2]].point.x, obj.vertexes[obj.faces[i].vertexIdx[2]].point.y, obj.vertexes[obj.faces[i].vertexIdx[2]].point.z);
+            Triangle tri(v0, v1, v2);
+            triangles.emplace_back(tri);
         }
+        std::cout << "mesh面数：" << triangles.size() << std::endl;
     }
 
     bool hit(const Ray& ray, float t_min, float t_max, HitRecord& rec) const override {

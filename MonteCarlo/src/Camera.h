@@ -8,15 +8,21 @@ public:
     glm::vec3 lookat;
     float vfov;//垂直视场角
     float aspect_ratio;
+    float zNear;
+    float zFar;
 
     Camera(const glm::vec3& pos,
         const glm::vec3& target,
         float vertical_fov,
-        float ratio = 16.0f / 9.0f)
+        float ratio = 16.0f / 9.0f,
+        float zNear=0.1f,
+        float zFar=100.0f)
         : position(pos),
         lookat(target),
         vfov(vertical_fov),
-        aspect_ratio(ratio) {}
+        aspect_ratio(ratio),
+        zNear(zNear),
+        zFar(zFar){}
 
     //s和t分别对应u和v;s=0, t=0 → 光线指向视口左下角 ;s = 1, t = 1 → 光线指向视口右上角; 中间值线性插值
     Ray generateRay(float s, float t) const {

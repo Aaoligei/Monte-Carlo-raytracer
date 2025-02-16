@@ -132,12 +132,16 @@
     <ClCompile Include="src\main.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)third_party\glm-master\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="src\Model.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\HitRecord.h" />
+    <ClInclude Include="src\Model.h" />
     <ClInclude Include="src\obj_loader.h" />
     <ClInclude Include="src\Ray.h" />
+    <ClInclude Include="src\utils.h" />
+    <ClInclude Include="src\Vec.h" />
     <ClInclude Include="src\Vector3.h" />
     <ClInclude Include="third_party\stb\stb_image.h" />
     <ClInclude Include="src\stb_image_write.h" />
