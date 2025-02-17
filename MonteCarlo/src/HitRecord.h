@@ -5,6 +5,7 @@
 #include"Ray.h"
 #include"obj_loader.h"
 #include"Model.h"
+#include"Material.h"
 // 命中记录结构
 struct HitRecord {
     float t;
@@ -12,6 +13,7 @@ struct HitRecord {
     glm::vec3 normal;
     bool front_face;
     glm::vec3 color; 
+    std::shared_ptr<Material> material;
 
     void set_face_normal(const Ray& ray, const glm::vec3& outward_normal) {
         front_face = glm::dot(ray.direction, outward_normal) < 0;
@@ -23,8 +25,12 @@ struct HitRecord {
 class Hittable {
 public:
     virtual ~Hittable() = default;
+
     virtual glm::vec3 get_color() const { return glm::vec3(1.0f); }
+
     virtual bool hit(const Ray& ray, float t_min, float t_max, HitRecord& rec) const = 0;
+
+    virtual const Material* get_material() const = 0; // 改为返回材质指针
 };
 
 // 球体类
@@ -32,8 +38,9 @@ class Sphere : public Hittable {
 public:
     glm::vec3 center;
     float radius;
+    std::shared_ptr<Material> material;
 
-    Sphere(const glm::vec3& c, float r) : center(c), radius(r) {}
+    Sphere(const glm::vec3& c, float r, std::shared_ptr<Material> material) : center(c), radius(r),material(material) {}
 
     bool hit(const Ray& ray, float t_min, float t_max, HitRecord& rec) const override {
         glm::vec3 oc = ray.origin - center;
@@ -56,7 +63,12 @@ public:
         rec.point = ray.at(rec.t);
         glm::vec3 outward_normal = (rec.point - center) / radius;
         rec.set_face_normal(ray, outward_normal);
+        rec.material = material;
         return true;
+    }
+
+    const Material* get_material() const override {
+        return material.get();
     }
 };
 
@@ -64,6 +76,7 @@ public:
 class Scene : public Hittable {
 public:
     std::vector<std::shared_ptr<Hittable>> objects;
+    std::shared_ptr<Material> material;
 
     void add(std::shared_ptr<Hittable> object) {
         objects.push_back(object);
@@ -84,6 +97,14 @@ public:
 
         return hit_anything;
     }
+
+    bool is_shadowed(const Ray& shadow_ray, float max_dist) const {
+        HitRecord temp_rec;
+        return hit(shadow_ray, 0.001f, max_dist, temp_rec);
+    }
+    const Material* get_material() const override {
+        return material.get();
+    }
 };
 
 //三角类 Möller-Trumbore算法
@@ -91,11 +112,13 @@ class Triangle : public Hittable {
 public:
     glm::vec3 v0, v1, v2;
     glm::vec3 normal;
+    std::shared_ptr<Material> material;
 
     Triangle(const glm::vec3& a,
         const glm::vec3& b,
-        const glm::vec3& c)
-        : v0(a), v1(b), v2(c) {
+        const glm::vec3& c,
+        std::shared_ptr<Material> material)
+        : v0(a), v1(b), v2(c) ,material(material){
         normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
     }
 
@@ -127,7 +150,12 @@ public:
         rec.t = t;
         rec.point = ray.at(t);
         rec.normal = normal;
+        rec.material = material;
         return true;
+    }
+
+    const Material* get_material() const override {
+        return material.get();
     }
 };
 
@@ -135,19 +163,23 @@ public:
 class Mesh : public Hittable {
 public:
     std::vector<Triangle> triangles;
+    std::shared_ptr<Material> material;
 
-
-    Mesh(const Model& obj) {
+    Mesh(const Model& obj, std::shared_ptr<Material> material) :
+    material(material)
+    {
         
         // 生成三角形
         for (size_t i = 0; i < obj.faces.size(); i ++) {
             glm::vec3 v0 = glm::vec3(obj.vertexes[obj.faces[i].vertexIdx[0]].point.x, obj.vertexes[obj.faces[i].vertexIdx[0]].point.y, obj.vertexes[obj.faces[i].vertexIdx[0]].point.z);
             glm::vec3 v1 = glm::vec3(obj.vertexes[obj.faces[i].vertexIdx[1]].point.x, obj.vertexes[obj.faces[i].vertexIdx[1]].point.y, obj.vertexes[obj.faces[i].vertexIdx[1]].point.z);
             glm::vec3 v2 = glm::vec3(obj.vertexes[obj.faces[i].vertexIdx[2]].point.x, obj.vertexes[obj.faces[i].vertexIdx[2]].point.y, obj.vertexes[obj.faces[i].vertexIdx[2]].point.z);
-            Triangle tri(v0, v1, v2);
+            Triangle tri(v0, v1, v2,material);
+            tri.normal = glm::vec3(obj.faces[i].normal.x, obj.faces[i].normal.y, obj.faces[i].normal.z);
             triangles.emplace_back(tri);
         }
         std::cout << "mesh面数：" << triangles.size() << std::endl;
+
     }
 
     bool hit(const Ray& ray, float t_min, float t_max, HitRecord& rec) const override {
@@ -163,66 +195,8 @@ public:
         }
         return hit_anything;
     }
-};
 
-// cylinder.h
-class Cylinder : public Hittable {
-    glm::vec3 start;
-    glm::vec3 end;
-    float radius;
-    glm::vec3 color;
-    glm::vec3 axis;
-
-public:
-    Cylinder(const glm::vec3& s, const glm::vec3& e,
-        float r, const glm::vec3& col)
-        : start(s), end(e), radius(r), color(col) {
-        axis = glm::normalize(end - start);
-    }
-
-    glm::vec3 get_color() const override { return color; }
-
-    bool hit(const Ray& ray, float t_min, float t_max, HitRecord& rec) const override {
-        const float EPSILON = 1e-6f;
-        glm::vec3 dir = end - start;
-        float length = glm::length(dir);
-        glm::vec3 unit_dir = dir / length;
-
-        // 将光线转换到圆柱局部坐标系
-        glm::vec3 oc = ray.origin - start;
-        float proj = glm::dot(oc, unit_dir);
-        glm::vec3 oc_proj = proj * unit_dir;
-        glm::vec3 oc_perp = oc - oc_proj;
-
-        glm::vec3 ray_dir_perp = ray.direction - glm::dot(ray.direction, unit_dir) * unit_dir;
-
-        // 计算圆柱相交
-        float a = glm::dot(ray_dir_perp, ray_dir_perp);
-        float b = 2.0f * glm::dot(oc_perp, ray_dir_perp);
-        float c = glm::dot(oc_perp, oc_perp) - radius * radius;
-
-        float discriminant = b * b - 4 * a * c;
-        if (discriminant < 0) return false;
-
-        float sqrtd = sqrt(discriminant);
-        float root = (-b - sqrtd) / (2 * a);
-        if (root < t_min || root > t_max) {
-            root = (-b + sqrtd) / (2 * a);
-            if (root < t_min || root > t_max)
-                return false;
-        }
-
-        // 检查高度范围
-        glm::vec3 hit_point = ray.at(root);
-        glm::vec3 vec_to_start = hit_point - start;
-        float projection = glm::dot(vec_to_start, unit_dir);
-        if (projection < 0 || projection > length) return false;
-
-        // 记录命中信息
-        rec.t = root;
-        rec.point = hit_point;
-        rec.normal = glm::normalize((hit_point - start) - projection * unit_dir);
-        rec.color = color;
-        return true;
+    const Material* get_material() const override {
+        return material.get();
     }
 };
