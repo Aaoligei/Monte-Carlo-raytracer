@@ -13,8 +13,10 @@
 #include"obj_loader.h"
 #include"Model.h"   
 #include"Light.h"
+#include"bvh_node.h"
 
 #include <gtc/constants.hpp> // 包含π常量
+#include <chrono>
 
 float angleBetweenVectors(const glm::vec3& a, const glm::vec3& b) {
     // 计算点积
@@ -109,19 +111,37 @@ Vec3 ray_color2(const Ray& ray, const Scene& scene,
     return result;
 }
 
+// 生成随机球体场景
+std::vector<std::shared_ptr<Hittable>> create_stress_scene() {
+    std::vector<std::shared_ptr<Hittable>> objects;
+    for (int a = -5; a <= 5; ++a) {
+        for (int b = -5; b <= 5; ++b) {
+            glm::vec3 center(a + 0.9f * rand() / RAND_MAX,
+                0.2f,
+                b + 0.9f * rand() / RAND_MAX);
+            objects.push_back(std::make_shared<Sphere>(
+                center, 0.2f,
+                std::make_shared<Lambertian>(glm::vec3(rand() % 1000 / 1000.0f))
+            ));
+        }
+    }
+    return objects;
+}
+
 // 主渲染函数
 void render_scene() {
     const int WIDTH = 800;
     const int HEIGHT = 600;
 
     std::vector<PointLight> lights = {
-        PointLight(glm::vec3(2,2,2))// 光源位置
+        PointLight(glm::vec3(2,2,2)),
+        PointLight(glm::vec3(2,2,-2))// 光源位置
     };
 
     //ObjMesh obj = load_obj("square.obj");
     //Mesh mesh(obj);
 
-    Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/src/cube.obj");
+    Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/cube.obj");
     Mesh mesh(model,red_mat);
     
     // 场景设置
@@ -131,12 +151,19 @@ void render_scene() {
     Triangle tri1(glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), glm::vec3(1, 0, 0),red_mat);
     Sphere ground(glm::vec3(0, -100.5, -1), 100.0f, ground_mat);
 
+    std::vector<std::shared_ptr<Hittable>> primitives;
+    primitives.push_back(std::make_shared<Sphere>(ground));
+    primitives.push_back(std::make_shared<Mesh>(mesh)); // 假设 Mesh 已经构建好
+
+    auto objects = create_stress_scene(); // 生成121个球体
+    scene.build_bvh(objects);
+
     //scene.add(std::make_shared<Sphere>(sphere));
-    scene.add(std::make_shared<Sphere>(ground));
+    //scene.add(std::make_shared<Sphere>(ground));
     //scene.add(std::make_shared<Triangle>(tri));
     //scene.add(std::make_shared<Triangle>(tri1));
     //scene.add(std::make_shared<Sphere>(glm::vec3(0, -100.5, -1), 100.0f));
-    scene.add(std::make_shared<Mesh>(mesh));
+    //scene.add(std::make_shared<Mesh>(mesh));
 
     // 相机配置
     Camera cam(
@@ -168,7 +195,11 @@ void render_scene() {
 }
 
 int main() {
+    auto start = std::chrono::high_resolution_clock::now();
     render_scene();
+    auto end = std::chrono::high_resolution_clock::now();
     std::cout << "Rendering completed!" << std::endl;
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Render time: " << duration.count() << "ms\n";
     return 0;
 }
