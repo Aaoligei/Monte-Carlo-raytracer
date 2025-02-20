@@ -192,7 +192,6 @@ public:
     std::shared_ptr<Hittable> objects;
     std::shared_ptr<Material> material;
     AABB aabb;
-
    
     void build_bvh(std::vector<std::shared_ptr<Hittable>> object) {
         objects = std::make_shared<BVHNode>(object, 0, object.size());

@@ -5,6 +5,7 @@
 #include "stb_image_write.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <gtx/string_cast.hpp>
+#include<omp.h>
 
 #include"Vector3.h"
 #include"Camera.h"
@@ -13,7 +14,7 @@
 #include"obj_loader.h"
 #include"Model.h"   
 #include"Light.h"
-#include"bvh_node.h"
+#include"Sampler.h"
 
 #include <gtc/constants.hpp> // 包含π常量
 #include <chrono>
@@ -141,7 +142,7 @@ void render_scene() {
     //ObjMesh obj = load_obj("square.obj");
     //Mesh mesh(obj);
 
-    Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/cube.obj");
+    Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/monkey.obj");
     Mesh mesh(model,red_mat);
     
     // 场景设置
@@ -151,11 +152,9 @@ void render_scene() {
     Triangle tri1(glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), glm::vec3(1, 0, 0),red_mat);
     Sphere ground(glm::vec3(0, -100.5, -1), 100.0f, ground_mat);
 
-    std::vector<std::shared_ptr<Hittable>> primitives;
-    primitives.push_back(std::make_shared<Sphere>(ground));
-    primitives.push_back(std::make_shared<Mesh>(mesh)); // 假设 Mesh 已经构建好
-
     auto objects = create_stress_scene(); // 生成121个球体
+    objects.push_back(std::make_shared<Sphere>(ground));
+    objects.push_back(std::make_shared<Mesh>(mesh));
     scene.build_bvh(objects);
 
     //scene.add(std::make_shared<Sphere>(sphere));
@@ -175,6 +174,8 @@ void render_scene() {
 
     std::vector<uint8_t> pixels(WIDTH * HEIGHT * 3);
 
+    omp_set_num_threads(50);
+#pragma omp parallel for
     // 逐像素渲染
     for (int j = 0; j < HEIGHT; ++j) {
         for (int i = 0; i < WIDTH; ++i) {
