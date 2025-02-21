@@ -189,20 +189,42 @@ public:
 // 场景类
 class Scene : public Hittable {
 public:
-    std::shared_ptr<Hittable> objects;
+    std::shared_ptr<Hittable> objects_root;
+    std::vector<std::shared_ptr<Hittable>> objects;
     std::shared_ptr<Material> material;
     AABB aabb;
    
+    void add(std::shared_ptr<Hittable> object) {
+        objects.push_back(object);
+    }
+
     void build_bvh(std::vector<std::shared_ptr<Hittable>> object) {
-        objects = std::make_shared<BVHNode>(object, 0, object.size());
+        objects_root = std::make_shared<BVHNode>(object, 0, object.size());
     }
 
     bool hit(const Ray& ray, float t_min, float t_max,
         HitRecord& rec) const override
     {
-        return objects->hit(ray, t_min, t_max, rec);
+        return objects_root->hit(ray, t_min, t_max, rec);
     }
     
+    bool hit_nobvh(const Ray& ray, float t_min, float t_max,
+        HitRecord& rec) const 
+    {
+        HitRecord temp_rec;
+        bool hit_anything = false;
+        auto closest_so_far = t_max;
+
+        for (const auto& object : objects) {
+            if (object->hit(ray, t_min, closest_so_far, temp_rec)) {
+                hit_anything = true;
+                closest_so_far = temp_rec.t;
+                rec = temp_rec;
+            }
+        }
+
+        return hit_anything;
+    }
 
     bool is_shadowed(const Ray& shadow_ray, float max_dist) const {
         HitRecord temp_rec;

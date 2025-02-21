@@ -6,6 +6,9 @@ class Material {
 public:
     virtual ~Material() = default;
 
+    bool isLight=false;
+    Vec3 color;
+
     virtual glm::vec3 shade(const glm::vec3& light_dir,
         const glm::vec3& view_dir,
         const glm::vec3& normal,
@@ -26,8 +29,10 @@ class Lambertian : public Material {
     float kd;         // Âþ·´ÉäÏµÊý
 
 public:
-    Lambertian(const glm::vec3& color, float diffuse = 1.0f)
-        : albedo(color), kd(diffuse) {}
+    Lambertian(const glm::vec3& col, float diffuse = 1.0f)
+        : albedo(col), kd(diffuse) {
+        color = Vec3(albedo.x,albedo.y, albedo.z);
+    }
 
     glm::vec3 shade(const glm::vec3& light_dir,
         const glm::vec3& view_dir,
@@ -51,3 +56,4 @@ public:
 
 auto red_mat = std::make_shared<Lambertian>(glm::vec3(1.0f, 0.2f, 0.2f));
 auto ground_mat = std::make_shared<Lambertian>(glm::vec3(0.8f));
+auto white_mat = std::make_shared<Lambertian>(glm::vec3(1.0f));

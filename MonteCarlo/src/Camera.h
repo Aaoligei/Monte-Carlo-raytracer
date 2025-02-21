@@ -25,7 +25,7 @@ public:
         zFar(zFar){}
 
     //s和t分别对应u和v;s=0, t=0 → 光线指向视口左下角 ;s = 1, t = 1 → 光线指向视口右上角; 中间值线性插值
-    Ray generateRay(float s, float t) const {
+    Ray shootRay(float s, float t) const {
         float theta = glm::radians(vfov);//度数转为弧度
         float viewport_height = 2.0f * tan(theta / 2.0f);
         float viewport_width = aspect_ratio * viewport_height;
