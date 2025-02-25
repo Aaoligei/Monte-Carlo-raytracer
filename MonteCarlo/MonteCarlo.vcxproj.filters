@@ -66,4 +66,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="src\svcpng.inc">
+      <Filter>头文件</Filter>
+    </None>
+  </ItemGroup>
 </Project>

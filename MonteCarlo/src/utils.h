@@ -16,4 +16,7 @@ bool isEqualf(float a, float b);
 
 std::vector<std::string> getListFiles(std::string path, std::string suffix);
 
+
+
+
 #endif
