@@ -59,9 +59,6 @@
     <ClInclude Include="src\Light.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\bvh_node.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="src\Sampler.h">
       <Filter>头文件</Filter>
     </ClInclude>

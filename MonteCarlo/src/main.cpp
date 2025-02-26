@@ -21,10 +21,10 @@
 
 #include <gtc/constants.hpp> // 包含π常量
 #include <chrono>
-const int SAMPLE = 16;
+const int SAMPLE = 128;
 const double BRIGHTNESS = (2.0f * 3.1415926f) * (1.0f / double(SAMPLE));
-const int WIDTH = 800;
-const int HEIGHT = 600;
+const int WIDTH = 512;
+const int HEIGHT = 512;
 
 // 0-1 随机数生成
 std::uniform_real_distribution<> dis(0.0, 1.0);
@@ -71,7 +71,9 @@ glm::vec3 randomDirection(glm::vec3 n)
     return glm::normalize(randomVec3() + n);
 }
 
-Vec3 PathTracing(const Ray& ray, const Scene& scene) {
+Vec3 PathTracing(const Ray& ray, const Scene& scene ,int depth) {
+    if (depth > 8) return glm::vec3(0);
+
     HitRecord rec;
     if (!scene.hit(ray, 0.001f, FLT_MAX, rec)) {
         return Vec3(0);
@@ -80,7 +82,18 @@ Vec3 PathTracing(const Ray& ray, const Scene& scene) {
         return Vec3(1.0f);
     }
     else {
-        return Vec3(0);
+        // 有 P 的概率终止
+        double r = randf();
+        float P = 0.8;
+        if (r > P) return glm::vec3(0);
+
+        Ray randomRay(rec.point, randomDirection(rec.normal));
+        //反射光检测
+        float cosine = glm::dot(-ray.direction, rec.normal);
+        Vec3 srcColor = rec.material->color;
+        Vec3 ptColor = PathTracing(randomRay, scene, depth+1)*cosine;
+        Vec3 color = srcColor * ptColor;
+        return color/P;
     }
 }
 
@@ -95,28 +108,9 @@ Vec3 CalColor(const Ray& ray, const Scene& scene) {
     Ray randomRay(rec.point, randomDirection(rec.normal));
     //反射光检测
     Vec3 srcColor = rec.material->color;
-    Vec3 ptColor = PathTracing(randomRay, scene);
+    Vec3 ptColor = PathTracing(randomRay, scene,0);
     Vec3 color = srcColor * ptColor;
     return Vec3(color.x * BRIGHTNESS, color.y * BRIGHTNESS, color.z * BRIGHTNESS);
-}
-
-
-
-// 生成随机球体场景
-std::vector<std::shared_ptr<Hittable>> create_stress_scene() {
-    std::vector<std::shared_ptr<Hittable>> objects;
-    for (int a = -5; a <= 5; ++a) {
-        for (int b = -5; b <= 5; ++b) {
-            glm::vec3 center(a + 0.9f * rand() / RAND_MAX,
-                0.2f,
-                b + 0.9f * rand() / RAND_MAX);
-            objects.push_back(std::make_shared<Sphere>(
-                center, 0.2f,
-                std::make_shared<Material>(glm::vec3(rand() % 1000 / 1000.0f))
-            ));
-        }
-    }
-    return objects;
 }
 
 // 主渲染函数
@@ -129,34 +123,46 @@ void render_scene() {
     };
 
     //面光
-    Triangle l1 = Triangle(glm::vec3(0.6, 1.99, 0.4), glm::vec3(-0.2, 1.99, -0.4), glm::vec3(-0.2,
-        1.99, 0.4), white_mat);
+    Triangle l1 = Triangle( glm::vec3(-0.4, 0.9, -0.4), glm::vec3(0.4, 0.9, 0.4), glm::vec3(-0.4,
+        0.9, 0.4), WHITE);
     l1.material->isLight = true;
-    Triangle l2 = Triangle(glm::vec3(0.6, 1.99, 0.4), glm::vec3(0.6, 1.99, -0.4), glm::vec3(-0.2,
-        1.99, -0.4), white_mat);
+    Triangle l2 = Triangle(glm::vec3(0.4, 0.9, 0.4), glm::vec3(0.4, 0.9, -0.4), glm::vec3(-0.4,
+        0.9, -0.4), WHITE);
     l2.material->isLight = true;
 
     Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/cube.obj");
-    Mesh mesh(model,red_mat);
+    Mesh mesh(model,RED);
     
     // 场景设置
     Scene scene;
-    Sphere sphere(glm::vec3(0, 0, -1), 0.5f,red_mat);
-    Triangle tri(glm::vec3(0.5, -0.5, -0.5), glm::vec3(-0.5, -0.5, -0.5), glm::vec3(0, -0.5, 0.5),red_mat);
-    Sphere ground(glm::vec3(0, -1000, 0), 999.0f, ground_mat);
+    Sphere sphere(glm::vec3(0, 0, -1), 0.5f, RED);
+    Triangle tri(glm::vec3(-0.5, -0.5, -0.5),glm::vec3(0.5, -0.5, -0.5), glm::vec3(0, -0.5, 0.5), RED);
 
-    //auto objects = create_stress_scene(); // 生成121个球体
-    scene.add(std::make_shared<Sphere>(ground));
-    //objects.push_back(std::make_shared<Mesh>(mesh));
     scene.add(std::make_shared<Triangle>(l1));
     scene.add(std::make_shared<Triangle>(l2));
-    //scene.add(std::make_shared<Triangle>(tri));
-    //scene.add(std::make_shared<Mesh>(mesh));
-    //scene.add(std::make_shared<Sphere>(sphere));
+
+    scene.add(std::make_shared<Triangle>(glm::vec3(-0.15, 0.4, -0.6), glm::vec3(-0.15, -0.95, -0.6), glm::vec3(0.15, 0.4, -0.6), YELLOW));
+    scene.add(std::make_shared<Triangle>(glm::vec3(0.15, 0.4, -0.6), glm::vec3(-0.15, -0.95, -0.6), glm::vec3(0.15, -0.95, -0.6), YELLOW));
+    // 背景盒子
+    // bottom
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, 1), glm::vec3(-1, -1, -1), glm::vec3(-1, -1, 1), RED));
+    scene.add(std::make_shared<Triangle>( glm::vec3(1, -1, 1), glm::vec3(1, -1, -1), glm::vec3(-1, -1, -1), RED));
+    // top
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(-1, 1, 1), glm::vec3(-1, 1, -1), RED));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(-1, 1, -1), glm::vec3(1, 1, -1), RED));
+    // back
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(-1, 1, -1), glm::vec3(-1, -1, -1), CYAN));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(1, 1, -1), glm::vec3(-1, 1, -1), CYAN));
+    // left
+    scene.add(std::make_shared<Triangle>(glm::vec3(-1, -1, -1), glm::vec3(-1, 1, 1), glm::vec3(-1, -1, 1), BLUE));
+    scene.add(std::make_shared<Triangle>(glm::vec3(-1, -1, -1), glm::vec3(-1, 1, -1), glm::vec3(-1, 1, 1), BLUE));
+    // right
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(1, -1, -1), glm::vec3(1, -1, 1), RED));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(1, 1, 1), glm::vec3(1, 1, -1), RED));
 
     // 相机配置
     Camera cam(
-        glm::vec3(0, 0, 4),
+        glm::vec3(0, 0, 2),
         glm::vec3(0, 0, -1),
         90.0f,
         float(WIDTH) / HEIGHT
