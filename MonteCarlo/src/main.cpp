@@ -21,8 +21,9 @@
 
 #include <gtc/constants.hpp> // 包含π常量
 #include <chrono>
-const int SAMPLE = 128;
-const double BRIGHTNESS = (2.0f * 3.1415926f) * (1.0f / double(SAMPLE));
+const int SAMPLE = 2048;
+const double LIGHT_INTENSITY = 1.5;
+const double BRIGHTNESS = (2.0f * 3.1415926f) * (1.0f / double(SAMPLE)) * LIGHT_INTENSITY;
 const int WIDTH = 512;
 const int HEIGHT = 512;
 
@@ -79,7 +80,7 @@ Vec3 PathTracing(const Ray& ray, const Scene& scene ,int depth) {
         return Vec3(0);
     }
     if (rec.material->isLight) {
-        return Vec3(1.0f);
+        return rec.material->color;
     }
     else {
         // 有 P 的概率终止
@@ -103,7 +104,7 @@ Vec3 CalColor(const Ray& ray, const Scene& scene) {
         return Vec3(0);
     }
     if (rec.material->isLight) {
-        return Vec3(1.0f);
+        return rec.material->color;
     }
     Ray randomRay(rec.point, randomDirection(rec.normal));
     //反射光检测
@@ -116,18 +117,12 @@ Vec3 CalColor(const Ray& ray, const Scene& scene) {
 // 主渲染函数
 void render_scene() {
 
-
-    std::vector<PointLight> lights = {
-        PointLight(glm::vec3(2,2,2)),
-        PointLight(glm::vec3(2,2,-2))// 光源位置
-    };
-
     //面光
-    Triangle l1 = Triangle( glm::vec3(-0.4, 0.9, -0.4), glm::vec3(0.4, 0.9, 0.4), glm::vec3(-0.4,
-        0.9, 0.4), WHITE);
+    Triangle l1 = Triangle( glm::vec3(-0.4, 0.99, -0.4), glm::vec3(0.4, 0.99, 0.4), glm::vec3(-0.4,
+        0.99, 0.4), WHITE);
     l1.material->isLight = true;
-    Triangle l2 = Triangle(glm::vec3(0.4, 0.9, 0.4), glm::vec3(0.4, 0.9, -0.4), glm::vec3(-0.4,
-        0.9, -0.4), WHITE);
+    Triangle l2 = Triangle(glm::vec3(0.4, 0.99, 0.4), glm::vec3(0.4, 0.99, -0.4), glm::vec3(-0.4,
+        0.99, -0.4), WHITE);
     l2.material->isLight = true;
 
     Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/cube.obj");
@@ -135,8 +130,8 @@ void render_scene() {
     
     // 场景设置
     Scene scene;
-    Sphere sphere(glm::vec3(0, 0, -1), 0.5f, RED);
-    Triangle tri(glm::vec3(-0.5, -0.5, -0.5),glm::vec3(0.5, -0.5, -0.5), glm::vec3(0, -0.5, 0.5), RED);
+    Sphere sphere(glm::vec3(-0.6, -0.8, 0.2), 0.5f, GREEN);
+    scene.add(std::make_shared<Sphere>(sphere));
 
     scene.add(std::make_shared<Triangle>(l1));
     scene.add(std::make_shared<Triangle>(l2));
@@ -157,8 +152,8 @@ void render_scene() {
     scene.add(std::make_shared<Triangle>(glm::vec3(-1, -1, -1), glm::vec3(-1, 1, 1), glm::vec3(-1, -1, 1), BLUE));
     scene.add(std::make_shared<Triangle>(glm::vec3(-1, -1, -1), glm::vec3(-1, 1, -1), glm::vec3(-1, 1, 1), BLUE));
     // right
-    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(1, -1, -1), glm::vec3(1, -1, 1), RED));
-    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(1, 1, 1), glm::vec3(1, 1, -1), RED));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(1, -1, -1), glm::vec3(1, -1, 1), CYAN));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(1, 1, 1), glm::vec3(1, 1, -1), CYAN));
 
     // 相机配置
     Camera cam(
@@ -185,14 +180,28 @@ void render_scene() {
                 Vec3 color = CalColor(ray, scene);
 
                 size_t index = 3 * (j * WIDTH + i);
-                pixels[index] += color.r();
-                pixels[index + 1] += color.g();
-                pixels[index + 2] += color.b();
+                //pixels[index] += color.r();
+                //pixels[index + 1] += color.g();
+                //pixels[index + 2] += color.b();
+
+                image[index] += color.r();
+                image[index + 1] += color.g();
+                image[index + 2] += color.b();
+
+                
             }
         }
-    }
+   }
 
-    stbi_write_png("render_output.png", WIDTH, HEIGHT, 3, pixels.data(), WIDTH * 3);
+   for (int i = 0; i < WIDTH * HEIGHT * 3; ++i) {
+       // 将 double 值缩放到 0-255 范围内，并转换为 uint8_t
+       pixels[i] = static_cast<uint8_t>(std::min(255.0, std::max(0.0, image[i])));
+   }
+
+   // 清理 image 数组
+   delete[] image;
+
+   stbi_write_png("render_output.png", WIDTH, HEIGHT, 3, pixels.data(), WIDTH * 3);
 
 }
 

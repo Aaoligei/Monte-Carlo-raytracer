@@ -5,10 +5,12 @@ class Material {
 public:
     virtual ~Material() = default;
     bool isLight ;
+    float lightIntensity;
     Vec3 color;
 
     Material(const glm::vec3& color):color(color) {
         isLight = false;
+        lightIntensity = 1.0f;
     }
     
 };
@@ -18,3 +20,4 @@ auto WHITE = std::make_shared<Material>(glm::vec3(1));
 auto CYAN = std::make_shared<Material>(glm::vec3(0.1f,1.0f,1.0f));
 auto BLUE = std::make_shared<Material>(glm::vec3(0, 0, 1.0f));
 auto YELLOW= std::make_shared<Material>(glm::vec3(1.0f, 1.0f, 0));
+auto GREEN = std::make_shared<Material>(glm::vec3(0, 1.0f, 0));
