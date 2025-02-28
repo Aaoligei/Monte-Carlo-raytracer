@@ -89,11 +89,25 @@ Vec3 PathTracing(const Ray& ray, const Scene& scene ,int depth) {
         if (r > P) return glm::vec3(0);
 
         Ray randomRay(rec.point, randomDirection(rec.normal));
+
         //反射光检测
         float cosine = glm::dot(-ray.direction, rec.normal);
-        Vec3 srcColor = rec.material->color;
-        Vec3 ptColor = PathTracing(randomRay, scene, depth+1)*cosine;
-        Vec3 color = srcColor * ptColor;
+        Vec3 color = Vec3(0);
+
+        // 根据反射率决定光线最终的方向
+        r = randf();
+        if (r < rec.material->specularRate)  // 镜面反射
+        {
+            randomRay.direction = normalize(glm::reflect(ray.direction,
+                rec.normal));
+            color = PathTracing(randomRay, scene,  depth + 1) * cosine;
+        }
+        else {
+            Vec3 srcColor = rec.material->color;
+            Vec3 ptColor = PathTracing(randomRay, scene, depth + 1) * cosine;
+            color = ptColor * srcColor;
+        }
+
         return color/P;
     }
 }
@@ -107,10 +121,21 @@ Vec3 CalColor(const Ray& ray, const Scene& scene) {
         return rec.material->color;
     }
     Ray randomRay(rec.point, randomDirection(rec.normal));
-    //反射光检测
-    Vec3 srcColor = rec.material->color;
-    Vec3 ptColor = PathTracing(randomRay, scene,0);
-    Vec3 color = srcColor * ptColor;
+    Vec3 color = Vec3(0);
+    // 根据反射率决定光线最终的方向
+    double r = randf();
+    if (r < rec.material->specularRate)  // 镜面反射
+    {
+        randomRay.direction = normalize(glm::reflect(ray.direction,
+            rec.normal));
+        color = PathTracing(randomRay, scene, 0);
+    }
+    else {
+        Vec3 srcColor = rec.material->color;
+        Vec3 ptColor = PathTracing(randomRay, scene, 0);
+        color = ptColor * srcColor;
+    }
+
     return Vec3(color.x * BRIGHTNESS, color.y * BRIGHTNESS, color.z * BRIGHTNESS);
 }
 
@@ -125,13 +150,16 @@ void render_scene() {
         0.99, -0.4), WHITE);
     l2.material->isLight = true;
 
-    Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/cube.obj");
-    Mesh mesh(model,RED);
+    Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/monkey.obj");
+    Mesh mesh(model,CYAN);
     
     // 场景设置
     Scene scene;
-    Sphere sphere(glm::vec3(-0.6, -0.8, 0.2), 0.5f, GREEN);
+    Sphere sphere(glm::vec3(-0.6, -0.8, 0.2), 0.2f, GREEN);
+    sphere.material->specularRate = 0.8;
     scene.add(std::make_shared<Sphere>(sphere));
+
+    //scene.add(std::make_shared<Mesh>(mesh));
 
     scene.add(std::make_shared<Triangle>(l1));
     scene.add(std::make_shared<Triangle>(l2));

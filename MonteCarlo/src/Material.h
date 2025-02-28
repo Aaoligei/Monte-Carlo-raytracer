@@ -4,9 +4,11 @@
 class Material {
 public:
     virtual ~Material() = default;
+
     bool isLight ;
     float lightIntensity;
     Vec3 color;
+    double specularRate = 0.0f;
 
     Material(const glm::vec3& color):color(color) {
         isLight = false;
