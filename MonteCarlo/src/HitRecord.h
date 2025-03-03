@@ -8,6 +8,14 @@
 #include"Material.h"
 #include <algorithm>
 
+
+struct BVHNode {
+    BVHNode* left = NULL;
+    BVHNode* right = NULL;
+    int n, index;
+    glm::vec3 AA, BB;
+};
+
 struct HitRecord {
     float t;
     glm::vec3 point;
@@ -102,12 +110,68 @@ public:
         return hit(shadow_ray, 0.001f, max_dist, temp_rec);
     }
 
+    static BVHNode* buildBVH(std::vector<Triangle>& triangles, int l, int r, int n) {
+        if (l > r) return 0;
+        BVHNode* node = new BVHNode();
+        node->AA = glm::vec3(INF, INF, INF);
+        node->BB = glm::vec3(-INF, -INF, -INF);
+
+        // 计算 AABB
+        for (int i = l; i <= r; i++) {
+            // 最小点 AA
+            float minx = std::min(triangles[i].v0.x,std::min(triangles[i].v1.x,
+                triangles[i].v2.x));
+            float miny = std::min(triangles[i].v0.y, std::min(triangles[i].v1.y,
+                triangles[i].v2.y));
+            float minz = std::min(triangles[i].v0.z, std::min(triangles[i].v1.z,
+                triangles[i].v2.z));
+            node->AA.x = std::min(node->AA.x, minx);
+            node->AA.y = std::min(node->AA.y, miny);
+            node->AA.z = std::min(node->AA.z, minz);
+            // 最大点 BB
+            float maxx = std::max(triangles[i].v0.x, std::max(triangles[i].v1.x,
+                triangles[i].v2.x));
+            float maxy = std::max(triangles[i].v0.y, std::max(triangles[i].v1.y,
+                triangles[i].v2.y));
+            float maxz = std::max(triangles[i].v0.z, std::max(triangles[i].v1.z,
+                triangles[i].v2.z));
+            node->BB.x = std::max(node->AA.x, maxx);
+            node->BB.y = std::max(node->AA.y, maxy);
+            node->BB.z = std::max(node->AA.z, maxz);
+        }
+        // 不多于 n 个三角形 返回叶子节点
+        if ((r - l + 1) <= n) {
+            node->n = r - l + 1;
+            node->index = l;
+            return node;
+        }
+        // 否则递归建树
+        float lenx = node->BB.x - node->AA.x;
+        float leny = node->BB.y - node->AA.y;
+        float lenz = node->BB.z - node->AA.z;
+
+        // 按 x 划分
+        if (lenx >= leny && lenx >= lenz)
+            std::sort(triangles.begin() + l, triangles.begin() + r + 1, Triangle::cmpx);
+        // 按 y 划分
+        if (leny >= lenx && leny >= lenz)
+            std::sort(triangles.begin() + l, triangles.begin() + r + 1, Triangle::cmpy);
+        // 按 z 划分
+        if (lenz >= lenx && lenz >= leny)
+            std::sort(triangles.begin() + l, triangles.begin() + r + 1, Triangle::cmpz);
+        // 递归
+        int mid = (l + r) / 2;
+        node->left = buildBVH(triangles, l, mid, n);
+        node->right = buildBVH(triangles, mid + 1, r, n);
+        return node;
+    }
+
 };
 
 //三角类 Möller-Trumbore算法
 class Triangle : public Hittable {
 public:
-    glm::vec3 v0, v1, v2;
+    glm::vec3 v0, v1, v2,center;
     glm::vec3 normal;
     std::shared_ptr<Material> material;
 
@@ -117,6 +181,7 @@ public:
         std::shared_ptr<Material> material)
         : v0(a), v1(b), v2(c) ,material(material){
         normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+        center = (v1 + v2 + v0) / glm::vec3(3, 3, 3);
     }
 
     bool hit(const Ray& ray, float t_min, float t_max, HitRecord& rec) const override {
@@ -152,7 +217,16 @@ public:
         
     }
 
-
+    // 按照三角形中心排序 -- 比较函数
+    static bool cmpx(const Triangle& t1, const Triangle& t2) {
+        return t1.center.x < t2.center.x;
+    }
+    static bool cmpy(const Triangle& t1, const Triangle& t2) {
+        return t1.center.y < t2.center.y;
+    }
+    static bool cmpz(const Triangle& t1, const Triangle& t2) {
+        return t1.center.z < t2.center.z;
+    }
 
 };
 

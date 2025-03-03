@@ -11,6 +11,7 @@
 
 
 const float EPS = 1e-6;
+const float INF = 1e8;
 
 bool isEqualf(float a, float b);
 

@@ -37,6 +37,7 @@ public:
 	Model() {};
 	Model(const std::string& path);
 	void rotate(float** RotateMat, std::vector<Vertex>& vertexes);
+	void scale(float scaleFactor);
 
 };
 

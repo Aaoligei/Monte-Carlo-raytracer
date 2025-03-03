@@ -141,7 +141,8 @@ Vec3 CalColor(const Ray& ray, const Scene& scene) {
 
 // 主渲染函数
 void render_scene() {
-
+    // 场景设置
+    Scene scene;
     //面光
     Triangle l1 = Triangle( glm::vec3(-0.4, 0.99, -0.4), glm::vec3(0.4, 0.99, 0.4), glm::vec3(-0.4,
         0.99, 0.4), WHITE);
@@ -151,10 +152,12 @@ void render_scene() {
     l2.material->isLight = true;
 
     Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/monkey.obj");
+    model.scale(0.5);
     Mesh mesh(model,CYAN);
+    //构建bvh
+    BVHNode* root = Scene::buildBVH(mesh.triangles, 0, mesh.triangles.size(), 10);
+    scene.add(std::make_shared<Mesh>(mesh));
     
-    // 场景设置
-    Scene scene;
     Sphere sphere(glm::vec3(-0.6, -0.8, 0.2), 0.2f, GREEN);
     sphere.material->specularRate = 0.8;
     scene.add(std::make_shared<Sphere>(sphere));

@@ -140,3 +140,41 @@ void Model::rotate(float** RotateMat, vector<Vertex>& vertexes)
 		faces[i].normal.z = RotateMat[2][0] * tmp_point.x + RotateMat[2][1] * tmp_point.y + RotateMat[2][2] * tmp_point.z;
 	}
 }
+
+void Model::scale(float scaleFactor) {
+	if (scaleFactor == 0.0f) {
+		cout << "缩放因子不能为零。" << endl;
+		return;
+	}
+
+	// 缩放顶点坐标（以模型中心为基准）
+	int vertex_num = vertexes.size();
+#pragma omp parallel for
+	for (int i = 0; i < vertex_num; ++i) {
+		Point3f translated = vertexes[i].point - center_point;
+		translated.x *= scaleFactor;
+		translated.y *= scaleFactor;
+		translated.z *= scaleFactor;
+		vertexes[i].point = translated + center_point;
+	}
+
+	// 缩放顶点法线并归一化
+	int normal_num = normals.size();
+#pragma omp parallel for
+	for (int i = 0; i < normal_num; ++i) {
+		normals[i].x /= scaleFactor;
+		normals[i].y /= scaleFactor;
+		normals[i].z /= scaleFactor;
+		normals[i] = normalize(normals[i]);
+	}
+
+	// 缩放面法线并归一化
+	int face_num = faces.size();
+#pragma omp parallel for
+	for (int i = 0; i < face_num; ++i) {
+		faces[i].normal.x /= scaleFactor;
+		faces[i].normal.y /= scaleFactor;
+		faces[i].normal.z /= scaleFactor;
+		faces[i].normal = normalize(faces[i].normal);
+	}
+}
