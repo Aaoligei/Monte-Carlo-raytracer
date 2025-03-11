@@ -21,7 +21,7 @@
 
 #include <gtc/constants.hpp> // 包含π常量
 #include <chrono>
-const int SAMPLE = 2048;
+const int SAMPLE = 1024;
 const double LIGHT_INTENSITY = 1.5;
 const double BRIGHTNESS = (2.0f * 3.1415926f) * (1.0f / double(SAMPLE)) * LIGHT_INTENSITY;
 const int WIDTH = 512;
@@ -143,6 +143,7 @@ Vec3 CalColor(const Ray& ray, const Scene& scene) {
 void render_scene() {
     // 场景设置
     Scene scene;
+
     //面光
     Triangle l1 = Triangle( glm::vec3(-0.4, 0.99, -0.4), glm::vec3(0.4, 0.99, 0.4), glm::vec3(-0.4,
         0.99, 0.4), WHITE);
@@ -150,23 +151,33 @@ void render_scene() {
     Triangle l2 = Triangle(glm::vec3(0.4, 0.99, 0.4), glm::vec3(0.4, 0.99, -0.4), glm::vec3(-0.4,
         0.99, -0.4), WHITE);
     l2.material->isLight = true;
+    Triangle l3 = Triangle(glm::vec3(0.99, 0.4, 0.4), glm::vec3(0.99, -0.4, -0.4), glm::vec3(0.99, -0.4, 0.4), WHITE);
+    l1.material->isLight = true;
+    Triangle l4 = Triangle(glm::vec3(0.99, -0.4, -0.4), glm::vec3(0.99, 0.4, 0.4), glm::vec3(0.99, 0.4, -0.4), WHITE);
+    l2.material->isLight = true;
 
+	//读取模型
     Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/monkey.obj");
     model.scale(0.5);
-    Mesh mesh(model,CYAN);
+
+	//创建网格(三角形)
+    Mesh mesh(model,YELLOW);
     //构建bvh
-    BVHNode* root = Scene::buildBVH(mesh.triangles, 0, mesh.triangles.size(), 10);
-    scene.add(std::make_shared<Mesh>(mesh));
+    BVHTree bvhtree(mesh.triangles, 0, mesh.triangles.size(), 5);
+    scene.add(std::make_shared<BVHTree>(bvhtree));
     
+	// 镜面球体
     Sphere sphere(glm::vec3(-0.6, -0.8, 0.2), 0.2f, GREEN);
     sphere.material->specularRate = 0.8;
     scene.add(std::make_shared<Sphere>(sphere));
 
-    //scene.add(std::make_shared<Mesh>(mesh));
-
+	//添加面光
     scene.add(std::make_shared<Triangle>(l1));
     scene.add(std::make_shared<Triangle>(l2));
+    scene.add(std::make_shared<Triangle>(l3));
+    scene.add(std::make_shared<Triangle>(l4));
 
+	// 三角形
     scene.add(std::make_shared<Triangle>(glm::vec3(-0.15, 0.4, -0.6), glm::vec3(-0.15, -0.95, -0.6), glm::vec3(0.15, 0.4, -0.6), YELLOW));
     scene.add(std::make_shared<Triangle>(glm::vec3(0.15, 0.4, -0.6), glm::vec3(-0.15, -0.95, -0.6), glm::vec3(0.15, -0.95, -0.6), YELLOW));
     // 背景盒子
@@ -204,6 +215,7 @@ void render_scene() {
    for (int k = 0; k < SAMPLE; k++) {
         for (int j = 0; j < HEIGHT; ++j) {
             for (int i = 0; i < WIDTH; ++i) {
+                
                 float u = float(i) / (WIDTH - 1);
                 float v = float(HEIGHT - 1 - j) / (HEIGHT - 1);
 
@@ -211,9 +223,6 @@ void render_scene() {
                 Vec3 color = CalColor(ray, scene);
 
                 size_t index = 3 * (j * WIDTH + i);
-                //pixels[index] += color.r();
-                //pixels[index + 1] += color.g();
-                //pixels[index + 2] += color.b();
 
                 image[index] += color.r();
                 image[index + 1] += color.g();
