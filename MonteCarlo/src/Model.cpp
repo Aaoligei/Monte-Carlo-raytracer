@@ -104,42 +104,11 @@ Model::Model(const string& path)
 	}
 }
 
-void Model::rotate(float** RotateMat, vector<Vertex>& vertexes)
+void Model::rotate()
 {
-	int vertex_num = vertexes.size();
-#pragma omp parallel for
-	for (int i = 0; i < vertex_num; ++i)
-	{
 
-		Point3f point;
-		Point3f tmp_point = vertexes[i].point - center_point;
-		vertexes[i].point.x = RotateMat[0][0] * tmp_point.x + RotateMat[0][1] * tmp_point.y + RotateMat[0][2] * tmp_point.z;
-		vertexes[i].point.y = RotateMat[1][0] * tmp_point.x + RotateMat[1][1] * tmp_point.y + RotateMat[1][2] * tmp_point.z;
-		vertexes[i].point.z = RotateMat[2][0] * tmp_point.x + RotateMat[2][1] * tmp_point.y + RotateMat[2][2] * tmp_point.z;
-		vertexes[i].point += center_point;
-	}
-
-	int normal_num = normals.size();
-#pragma omp parallel for
-	for (int i = 0; i < normal_num; ++i)
-	{
-		Point3f tmp_point = normals[i];
-		normals[i].x = RotateMat[0][0] * tmp_point.x + RotateMat[0][1] * tmp_point.y + RotateMat[0][2] * tmp_point.z;
-		normals[i].y = RotateMat[1][0] * tmp_point.x + RotateMat[1][1] * tmp_point.y + RotateMat[1][2] * tmp_point.z;
-		normals[i].z = RotateMat[2][0] * tmp_point.x + RotateMat[2][1] * tmp_point.y + RotateMat[2][2] * tmp_point.z;
-
-	}
-
-	int face_num = faces.size();
-#pragma omp parallel for
-	for (int i = 0; i < face_num; ++i)
-	{
-		Point3f tmp_point = faces[i].normal;
-		faces[i].normal.x = RotateMat[0][0] * tmp_point.x + RotateMat[0][1] * tmp_point.y + RotateMat[0][2] * tmp_point.z;
-		faces[i].normal.y = RotateMat[1][0] * tmp_point.x + RotateMat[1][1] * tmp_point.y + RotateMat[1][2] * tmp_point.z;
-		faces[i].normal.z = RotateMat[2][0] * tmp_point.x + RotateMat[2][1] * tmp_point.y + RotateMat[2][2] * tmp_point.z;
-	}
 }
+
 
 void Model::scale(float scaleFactor) {
 	if (scaleFactor == 0.0f) {

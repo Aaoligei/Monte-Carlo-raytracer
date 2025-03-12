@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include "Vec.h"
+#include"glm.hpp"
 
 class Vertex
 {
@@ -36,7 +37,7 @@ public:
 	bool load(const std::string& path);
 	Model() {};
 	Model(const std::string& path);
-	void rotate(float** RotateMat, std::vector<Vertex>& vertexes);
+	void rotate();
 	void scale(float scaleFactor);
 
 };

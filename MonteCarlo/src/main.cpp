@@ -5,6 +5,7 @@
 #include "stb_image_write.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <gtx/string_cast.hpp>
+#include <gtc/matrix_transform.hpp>
 #include<omp.h>
 #include<random>
 #include<stdlib.h>
@@ -22,7 +23,7 @@
 #include <gtc/constants.hpp> // 包含π常量
 #include <chrono>
 const int SAMPLE = 1024;
-const double LIGHT_INTENSITY = 1.5;
+const double LIGHT_INTENSITY = 1.2;
 const double BRIGHTNESS = (2.0f * 3.1415926f) * (1.0f / double(SAMPLE)) * LIGHT_INTENSITY;
 const int WIDTH = 512;
 const int HEIGHT = 512;
@@ -145,16 +146,16 @@ void render_scene() {
     Scene scene;
 
     //面光
-    Triangle l1 = Triangle( glm::vec3(-0.4, 0.99, -0.4), glm::vec3(0.4, 0.99, 0.4), glm::vec3(-0.4,
-        0.99, 0.4), WHITE);
+    Triangle l1 = Triangle( glm::vec3(-0.7, 0.99, -0.7), glm::vec3(0.7, 0.99, 0.7), glm::vec3(-0.7,
+        0.99, 0.7), WHITE);
     l1.material->isLight = true;
-    Triangle l2 = Triangle(glm::vec3(0.4, 0.99, 0.4), glm::vec3(0.4, 0.99, -0.4), glm::vec3(-0.4,
-        0.99, -0.4), WHITE);
+    Triangle l2 = Triangle(glm::vec3(0.7, 0.99, 0.7), glm::vec3(0.7, 0.99, -0.7), glm::vec3(-0.7,
+        0.99, -0.7), WHITE);
     l2.material->isLight = true;
-    Triangle l3 = Triangle(glm::vec3(0.99, 0.4, 0.4), glm::vec3(0.99, -0.4, -0.4), glm::vec3(0.99, -0.4, 0.4), WHITE);
+    /*Triangle l3 = Triangle(glm::vec3(0.99, 0.7, 0.7), glm::vec3(0.99, -0.7, -0.7), glm::vec3(0.99, -0.7, 0.7), WHITE);
     l1.material->isLight = true;
-    Triangle l4 = Triangle(glm::vec3(0.99, -0.4, -0.4), glm::vec3(0.99, 0.4, 0.4), glm::vec3(0.99, 0.4, -0.4), WHITE);
-    l2.material->isLight = true;
+    Triangle l4 = Triangle(glm::vec3(0.99, -0.7, -0.7), glm::vec3(0.99, 0.7, 0.7), glm::vec3(0.99, 0.7, -0.7), WHITE);
+    l2.material->isLight = true;*/
 
 	//读取模型
     Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/monkey.obj");
@@ -167,35 +168,34 @@ void render_scene() {
     scene.add(std::make_shared<BVHTree>(bvhtree));
     
 	// 镜面球体
-    Sphere sphere(glm::vec3(-0.6, -0.8, 0.2), 0.2f, GREEN);
-    sphere.material->specularRate = 0.8;
+    Sphere sphere(glm::vec3(-0.6, -0.8, 0.2), 0.2f, GREEN_MIRROR);
     scene.add(std::make_shared<Sphere>(sphere));
 
 	//添加面光
     scene.add(std::make_shared<Triangle>(l1));
     scene.add(std::make_shared<Triangle>(l2));
-    scene.add(std::make_shared<Triangle>(l3));
-    scene.add(std::make_shared<Triangle>(l4));
+    //scene.add(std::make_shared<Triangle>(l3));
+    //scene.add(std::make_shared<Triangle>(l4));
 
 	// 三角形
-    scene.add(std::make_shared<Triangle>(glm::vec3(-0.15, 0.4, -0.6), glm::vec3(-0.15, -0.95, -0.6), glm::vec3(0.15, 0.4, -0.6), YELLOW));
-    scene.add(std::make_shared<Triangle>(glm::vec3(0.15, 0.4, -0.6), glm::vec3(-0.15, -0.95, -0.6), glm::vec3(0.15, -0.95, -0.6), YELLOW));
+    //scene.add(std::make_shared<Triangle>(glm::vec3(-0.15, 0.4, -0.6), glm::vec3(-0.15, -0.95, -0.6), glm::vec3(0.15, 0.4, -0.6), YELLOW));
+    //scene.add(std::make_shared<Triangle>(glm::vec3(0.15, 0.4, -0.6), glm::vec3(-0.15, -0.95, -0.6), glm::vec3(0.15, -0.95, -0.6), YELLOW));
     // 背景盒子
     // bottom
-    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, 1), glm::vec3(-1, -1, -1), glm::vec3(-1, -1, 1), RED));
-    scene.add(std::make_shared<Triangle>( glm::vec3(1, -1, 1), glm::vec3(1, -1, -1), glm::vec3(-1, -1, -1), RED));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, 1), glm::vec3(-1, -1, -1), glm::vec3(-1, -1, 1), GRAY));
+    scene.add(std::make_shared<Triangle>( glm::vec3(1, -1, 1), glm::vec3(1, -1, -1), glm::vec3(-1, -1, -1), GRAY));
     // top
-    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(-1, 1, 1), glm::vec3(-1, 1, -1), RED));
-    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(-1, 1, -1), glm::vec3(1, 1, -1), RED));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(-1, 1, 1), glm::vec3(-1, 1, -1), GRAY));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(-1, 1, -1), glm::vec3(1, 1, -1), GRAY));
     // back
-    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(-1, 1, -1), glm::vec3(-1, -1, -1), CYAN));
-    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(1, 1, -1), glm::vec3(-1, 1, -1), CYAN));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(-1, 1, -1), glm::vec3(-1, -1, -1), GRAY));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(1, 1, -1), glm::vec3(-1, 1, -1), GRAY));
     // left
-    scene.add(std::make_shared<Triangle>(glm::vec3(-1, -1, -1), glm::vec3(-1, 1, 1), glm::vec3(-1, -1, 1), BLUE));
-    scene.add(std::make_shared<Triangle>(glm::vec3(-1, -1, -1), glm::vec3(-1, 1, -1), glm::vec3(-1, 1, 1), BLUE));
+    scene.add(std::make_shared<Triangle>(glm::vec3(-1, -1, -1), glm::vec3(-1, 1, 1), glm::vec3(-1, -1, 1), GREEN));
+    scene.add(std::make_shared<Triangle>(glm::vec3(-1, -1, -1), glm::vec3(-1, 1, -1), glm::vec3(-1, 1, 1), GREEN));
     // right
-    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(1, -1, -1), glm::vec3(1, -1, 1), CYAN));
-    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(1, 1, 1), glm::vec3(1, 1, -1), CYAN));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, 1, 1), glm::vec3(1, -1, -1), glm::vec3(1, -1, 1), RED));
+    scene.add(std::make_shared<Triangle>(glm::vec3(1, -1, -1), glm::vec3(1, 1, 1), glm::vec3(1, 1, -1), RED));
 
     // 相机配置
     Camera cam(
