@@ -153,9 +153,6 @@
     <ClInclude Include="third_party\stb\stb_image.h" />
     <ClInclude Include="src\stb_image_write.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="src\svcpng.inc" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

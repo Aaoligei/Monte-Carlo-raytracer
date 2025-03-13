@@ -9,7 +9,6 @@
 #include<omp.h>
 #include<random>
 #include<stdlib.h>
-#include"svcpng.inc"
 
 #include"Vector3.h"
 #include"Camera.h"
@@ -160,6 +159,7 @@ void render_scene() {
 	//读取模型
     Model model("C:/Users/25342/OneDrive/桌面/Monte-Carlo-raytracer/MonteCarlo/obj/monkey.obj");
     model.scale(0.5);
+	model.rotate(-20, glm::vec3(1, 1, 0));
 
 	//创建网格(三角形)
     Mesh mesh(model,YELLOW);

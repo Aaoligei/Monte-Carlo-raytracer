@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <ctime>
+#include <ext/matrix_transform.hpp>
 
 using namespace std;
 
@@ -104,11 +105,6 @@ Model::Model(const string& path)
 	}
 }
 
-void Model::rotate()
-{
-
-}
-
 
 void Model::scale(float scaleFactor) {
 	if (scaleFactor == 0.0f) {
@@ -145,5 +141,35 @@ void Model::scale(float scaleFactor) {
 		faces[i].normal.y /= scaleFactor;
 		faces[i].normal.z /= scaleFactor;
 		faces[i].normal = normalize(faces[i].normal);
+	}
+}
+
+void Model::rotate(float angle, const glm::vec3& axis) {
+	if (vertexes.empty()) return;
+
+	// 生成旋转矩阵
+	glm::mat4 rotationMat = glm::rotate(glm::mat4(1.0f),glm::radians(angle), axis);
+
+	// 旋转顶点
+	for (auto& vertex : vertexes) {
+		// 平移至原点并旋转
+		glm::vec3 translated = glm::vec3(vertex.point.x, vertex.point.y, vertex.point.z) - glm::vec3(center_point.x, center_point.y, center_point.z);
+		glm::vec3 rotated = rotationMat * glm::vec4(translated, 1.0f);
+		glm::vec3 temp = glm::vec3(center_point.x, center_point.y, center_point.z);
+		vertex.point = Vec3f(rotated.x + temp.x, rotated.y + temp.y, rotated.z + temp.z);
+	}
+
+	// 旋转顶点法线（若存在）
+	for (auto& normal : normals) {
+		glm::vec3 rotatedNormal = rotationMat * glm::vec4(normal.x,normal.y, normal.z, 0.0f);
+		glm::vec3 temp = glm::normalize(rotatedNormal);
+		normal = Vec3f(temp.x, temp.y, temp.z);
+	}
+
+	// 旋转面法线
+	for (auto& face : faces) {
+		glm::vec3 rotatedNormal = rotationMat * glm::vec4(face.normal.x, face.normal.y, face.normal.z, 0.0f);
+		glm::vec3 temp=glm::normalize(rotatedNormal);
+		face.normal =Vec3f(temp.x, temp.y, temp.z);
 	}
 }

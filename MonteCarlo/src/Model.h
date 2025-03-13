@@ -37,7 +37,7 @@ public:
 	bool load(const std::string& path);
 	Model() {};
 	Model(const std::string& path);
-	void rotate();
+	void rotate(float angleRadians, const glm::vec3& axis);
 	void scale(float scaleFactor);
 
 };
