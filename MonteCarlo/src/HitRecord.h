@@ -5,23 +5,49 @@
 #include"Ray.h"
 #include"obj_loader.h"
 #include"Model.h"
-#include"Material.h"
 #include <algorithm>
-
-
+#define PI 3.14159265358979323846
 
 struct HitRecord {
     float t;
     glm::vec3 point;
     glm::vec3 normal;
     bool front_face;
-    std::shared_ptr<Material> material;
+    std::shared_ptr<class Material> material;
 
     void set_face_normal(const Ray& ray, const glm::vec3& outward_normal) {
         front_face = glm::dot(ray.direction, outward_normal) < 0;
         normal = front_face ? outward_normal : -outward_normal;
     }
 };
+
+class Material {
+public:
+    virtual ~Material() = default;
+
+    bool isLight;
+    float lightIntensity;
+    glm::vec3 color;
+    double specularRate = 0;
+
+    Material(const glm::vec3& color) :color(color) {
+        isLight = false;
+        lightIntensity = 1.0f;
+    }
+
+    Material(const glm::vec3& color, double spec) :color(color), specularRate(spec) {
+        isLight = false;
+        lightIntensity = 1.0f;
+    }
+
+    virtual double scattering_pdf(const Ray& r_in, HitRecord& rec, const Ray& scattered) const {
+        double cos_theta = glm::dot(rec.normal, glm::normalize(scattered.direction));
+        return cos_theta < 0 ? 0 : cos_theta / PI;
+    }
+};
+
+
+
 
 // 可命中对象基类
 class Hittable {
@@ -75,7 +101,7 @@ class Triangle : public Hittable {
 public:
     glm::vec3 v0, v1, v2, center;
     glm::vec3 normal;
-    std::shared_ptr<Material> material=RED;
+    std::shared_ptr<Material> material;
 
     Triangle(const glm::vec3& a,
         const glm::vec3& b,
@@ -137,6 +163,18 @@ public:
     static bool cmpz(const Triangle& t1, const Triangle& t2) {
         return t1.center.z < t2.center.z;
     }
+
+    void rotate(float angle, const glm::vec3& axis, glm::vec3 _center) {
+		glm::mat4 rotationMat = glm::rotate(glm::mat4(1.0f), glm::radians(angle), axis);
+		glm::vec3 temp = _center;
+		glm::vec4 v04 = rotationMat * glm::vec4(v0 - temp, 1.0f) + glm::vec4(temp,0);
+        glm::vec4 v14 = rotationMat * glm::vec4(v1 - temp, 1.0f) + glm::vec4(temp,0);
+        glm::vec4 v24 = rotationMat * glm::vec4(v2 - temp, 1.0f) + glm::vec4(temp,0);
+        v0 = glm::vec3(v04.x, v04.y,v04.z);
+        v1 = glm::vec3(v14.x, v14.y, v14.z);
+        v2 = glm::vec3(v24.x, v24.y, v24.z);
+		normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+	}
 
 };
 
@@ -340,4 +378,71 @@ private:
         node->right = buildBVH(triangles, mid + 1, r, n);
         return node;
     }
+};
+
+//长方体
+class Box : public Hittable {
+public:
+    std::vector<Triangle> triangles;
+    std::shared_ptr<Material> material;
+    float width, height, depth;
+	glm::vec3 center;
+
+    Box(float width, float height, float depth,glm::vec3 center, std::shared_ptr<Material> material)
+		: width(width), height(height), depth(depth), center(center), material(material)
+    {
+		glm::vec3 v0 = glm::vec3(center.x - width / 2, center.y - height / 2, center.z - depth / 2);
+		glm::vec3 v1 = glm::vec3(center.x + width / 2, center.y - height / 2, center.z - depth / 2);
+		glm::vec3 v2 = glm::vec3(center.x + width / 2, center.y + height / 2, center.z - depth / 2);
+		glm::vec3 v3 = glm::vec3(center.x - width / 2, center.y + height / 2, center.z - depth / 2);
+		glm::vec3 v4 = glm::vec3(center.x - width / 2, center.y - height / 2, center.z + depth / 2);
+		glm::vec3 v5 = glm::vec3(center.x + width / 2, center.y - height / 2, center.z + depth / 2);
+		glm::vec3 v6 = glm::vec3(center.x + width / 2, center.y + height / 2, center.z + depth / 2);
+		glm::vec3 v7 = glm::vec3(center.x - width / 2, center.y + height / 2, center.z + depth / 2);
+
+		points.push_back(v0);
+		points.push_back(v1);
+		points.push_back(v2);
+		points.push_back(v3);
+		points.push_back(v4);
+		points.push_back(v5);
+		points.push_back(v6);
+		points.push_back(v7);
+
+		triangles.emplace_back(Triangle( v1, v0, v2, material));
+		triangles.emplace_back(Triangle( v2, v0, v3, material));
+		triangles.emplace_back(Triangle(v4, v0, v5, material));
+		triangles.emplace_back(Triangle(v5, v0, v1, material));
+		triangles.emplace_back(Triangle(v5, v1, v6, material));
+		triangles.emplace_back(Triangle(v6, v1, v2, material));
+		triangles.emplace_back(Triangle(v6, v2, v7, material));
+		triangles.emplace_back(Triangle(v7, v2, v3, material));
+		triangles.emplace_back(Triangle(v7, v3, v4, material));
+		triangles.emplace_back(Triangle(v4, v3, v0, material));
+		triangles.emplace_back(Triangle(v7, v4, v6, material));
+		triangles.emplace_back(Triangle(v6, v4, v5, material));
+    }
+
+    void rotate(float angle, const glm::vec3& axis) {
+        for (auto& tri : triangles) {
+            tri.rotate(angle, axis,center);
+        }
+    }
+
+    bool hit(const Ray& ray, float t_min, float t_max, HitRecord& rec) const override {
+        bool hit_anything = false;
+        HitRecord temp_rec;
+
+        for (const auto& tri : triangles) {
+            if (tri.hit(ray, t_min, t_max, temp_rec)) {
+                hit_anything = true;
+                t_max = temp_rec.t;
+                rec = temp_rec;
+            }
+        }
+        return hit_anything;
+    }
+
+private:
+    std::vector<glm::vec3> points;
 };

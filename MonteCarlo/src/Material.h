@@ -1,26 +1,5 @@
 #pragma once
-#include<glm.hpp>
-
-class Material {
-public:
-    virtual ~Material() = default;
-
-    bool isLight ;
-    float lightIntensity;
-    Vec3 color;
-    double specularRate = 0;
-
-    Material(const glm::vec3& color):color(color) {
-        isLight = false;
-        lightIntensity = 1.0f;
-    }
-
-    Material(const glm::vec3& color,double spec) :color(color) ,specularRate(spec){
-        isLight = false;
-        lightIntensity = 1.0f;
-    }
-    
-};
+#include "HitRecord.h"
 
 auto RED = std::make_shared<Material>(glm::vec3(1.0f, 0.2f, 0.2f));
 auto WHITE = std::make_shared<Material>(glm::vec3(1));

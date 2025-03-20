@@ -9,7 +9,7 @@
 #include <iostream>
 
 
-
+#define PI 3.14159265358979323846
 const float EPS = 1e-6;
 const float INF = 1e8;
 

@@ -62,5 +62,11 @@
     <ClInclude Include="src\Sampler.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="src\cornell_box.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\main.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
