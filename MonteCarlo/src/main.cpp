@@ -25,7 +25,7 @@
 #include "cornell_box.h"
 
 const int SAMPLE = 4096;
-const double LIGHT_INTENSITY = 5;
+const double LIGHT_INTENSITY = 3;
 const double BRIGHTNESS = (2.0f * 3.1415926f) * (1.0f / double(SAMPLE)) * LIGHT_INTENSITY;
 const int WIDTH = 512;
 const int HEIGHT = 512;
@@ -76,7 +76,7 @@ glm::vec3 randomDirection(glm::vec3 n)
 }
 
 Vec3 PathTracing(const Ray& ray, const Scene& scene ,int depth) {
-    if (depth > 8) return glm::vec3(0);
+    if (depth > 50) return glm::vec3(0);
 
     HitRecord rec;
     if (!scene.hit(ray, 0.001f, FLT_MAX, rec)) {
@@ -168,7 +168,7 @@ void SetupScene(Scene& scene)
     model.rotate(-20, glm::vec3(1, 1, 0));
 
     //创建网格(三角形)
-    Mesh mesh(model, YELLOW);
+    Mesh mesh(model, WHITE_MIRROR);
     //构建bvh
     BVHTree bvhtree(mesh.triangles, 0, mesh.triangles.size(), 5);
     scene.add(std::make_shared<BVHTree>(bvhtree));
@@ -210,10 +210,10 @@ void render_scene() {
     Scene scene;
 
     //自定义场景
-    //SetupScene(scene);
+    SetupScene(scene);
     
     //cornell box
-    CornellBox::setup(scene);
+    //CornellBox::setup(scene);
 
     // 相机配置
     Camera cam(
